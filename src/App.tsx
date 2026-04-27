@@ -139,20 +139,31 @@ const App = () => {
                   </div>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <a 
                     href="https://checkout.projetodescomplicado.com.br/08104661/"
-                    className="w-full bg-white text-black py-5 md:py-6 rounded-2xl font-black text-base md:text-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+                    className="w-full bg-white text-black py-5 md:py-6 rounded-2xl font-black text-base md:text-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 shadow-[0_0_30px_rgba(255,255,255,0.1)]"
                   >
                     SIM! QUERO O UPGRADE POR + R$ 9,90
                   </a>
-                  <a 
-                    href="https://checkout.projetodescomplicado.com.br/49126785/"
-                    onClick={() => setShowUpsell(false)}
-                    className="block w-full text-center text-white/20 hover:text-white/40 py-2 text-[10px] md:text-xs font-bold uppercase tracking-widest transition-colors"
-                  >
-                    Não, obrigado. Aceito o risco de seguir sem o plano completo. Quero manter apenas o plano básico de R$ 10.
-                  </a>
+                  
+                  <div className="relative p-6 md:p-8 rounded-[2rem] bg-red-500/5 border border-red-500/10 text-center overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500/20 to-transparent" />
+                    <p className="text-[10px] md:text-xs font-black text-red-500 uppercase tracking-[0.2em] mb-3">
+                      ⚠️ Atenção: Você perderá acesso imediato a:
+                    </p>
+                    <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 mb-6 opacity-40">
+                      {["90 Projetos Modernos", "Simulador de Custos", "Checklists de Obra", "Bônus VIP"].map((item, i) => (
+                        <span key={i} className="text-[9px] md:text-[10px] font-bold uppercase line-through">{item}</span>
+                      ))}
+                    </div>
+                    <a 
+                      href="https://checkout.projetodescomplicado.com.br/49126785/"
+                      className="inline-block w-full py-4 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest border border-white/5"
+                    >
+                      ABRIR MÃO DE TUDO E SEGUIR COM APENAS 10 PROJETOS
+                    </a>
+                  </div>
                 </div>
               </div>
             </motion.div>
