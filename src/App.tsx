@@ -141,13 +141,13 @@ const App = () => {
 
                 <div className="space-y-4">
                   <a 
-                    href="https://pay.hotmart.com/J102156061I?off=v7bwmhpg&checkoutMode=10&bid=1776225741281"
+                    href="https://checkout.projetodescomplicado.com.br/08104661/"
                     className="w-full bg-white text-black py-5 md:py-6 rounded-2xl font-black text-base md:text-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
                   >
                     SIM! QUERO O UPGRADE POR + R$ 9,90
                   </a>
                   <a 
-                    href="https://pay.lowify.com.br/checkout?product_id=SLFDcE"
+                    href="https://checkout.projetodescomplicado.com.br/49126785/"
                     onClick={() => setShowUpsell(false)}
                     className="block w-full text-center text-white/20 hover:text-white/40 py-2 text-[10px] md:text-xs font-bold uppercase tracking-widest transition-colors"
                   >
@@ -335,7 +335,7 @@ const App = () => {
                     </div>
                   </div>
                   <a 
-                    href="https://pay.hotmart.com/J102156061I?off=mk3l6cuy&checkoutMode=10&bid=1776225715348"
+                    href="https://checkout.projetodescomplicado.com.br/88565122/"
                     className="block text-center w-full bg-white text-black py-5 md:py-7 rounded-2xl md:rounded-3xl font-black text-xl md:text-xl hover:scale-[1.02] active:scale-[0.98] transition-all"
                   >
                     GARANTIR MEGA PACK
