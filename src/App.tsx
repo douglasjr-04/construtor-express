@@ -477,7 +477,7 @@ const App = () => {
       </div>
 
       {/* WhatsApp - Floating */}
-      <a href="https://wa.me/seu-numero" target="_blank" className="fixed bottom-24 right-6 md:bottom-10 md:right-10 z-[110] bg-[#25D366] text-white p-4 md:p-5 rounded-2xl md:rounded-3xl shadow-2xl hover:scale-110 active:scale-95 transition-all">
+      <a href="https://wa.me/5511978693918" target="_blank" className="fixed bottom-24 right-6 md:bottom-10 md:right-10 z-[110] bg-[#25D366] text-white p-4 md:p-5 rounded-2xl md:rounded-3xl shadow-2xl hover:scale-110 active:scale-95 transition-all">
         <MessageCircle className="w-6 h-6 md:w-7 md:h-7" />
       </a>
     </div>
