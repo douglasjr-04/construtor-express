@@ -301,6 +301,32 @@ const App = () => {
         </div>
       </section>
 
+      {/* Bonus Showcase */}
+      <section className="py-12 md:py-24 bg-[#050505] relative overflow-hidden">
+        <div className="container mx-auto px-6">
+          <div className="max-w-4xl mx-auto text-center mb-10 md:mb-24">
+            <h2 className="text-3xl md:text-6xl font-black tracking-tight mb-4 md:mb-8 uppercase">🎁 BÔNUS <span className="text-white/30 italic block md:inline">EXCLUSIVOS</span></h2>
+            <p className="text-white/40 text-base md:text-lg font-light">Ao garantir o Mega Pack hoje, você também leva:</p>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-8 max-w-6xl mx-auto">
+            {[
+              { title: "Checklist Prefeituras", value: "R$ 67" },
+              { title: "Planilha Orçamento", value: "R$ 47" },
+              { title: "Guia 15 Erros Caros", value: "R$ 49" },
+              { title: "Cronograma Obra", value: "R$ 99" },
+              { title: "PDF Modo Obra", value: "R$ 37" },
+              { title: "Grupo VIP Whats", value: "R$ 67" }
+            ].map((bonus, i) => (
+              <div key={i} className="p-4 md:p-8 rounded-[1rem] md:rounded-[2.5rem] bg-white/5 border border-white/5 text-center group">
+                <h4 className="text-base md:text-xl font-bold mb-1 md:mb-4 tracking-tight leading-tight">{bonus.title}</h4>
+                <p className="text-white/20 line-through text-[10px] md:text-xs mb-0.5 md:mb-2">de {bonus.value}</p>
+                <div className="text-primary font-black text-[10px] md:text-sm uppercase tracking-widest italic group-hover:scale-110 transition-transform">DE GRAÇA</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Pricing Section */}
       <section id="pricing" className="py-12 md:py-24 bg-[#080808]">
         <div className="container mx-auto px-4 md:px-6">
@@ -385,32 +411,6 @@ const App = () => {
                 </button>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Bonus Showcase */}
-      <section className="py-12 md:py-24 bg-[#050505] relative overflow-hidden">
-        <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto text-center mb-10 md:mb-24">
-            <h2 className="text-3xl md:text-6xl font-black tracking-tight mb-4 md:mb-8 uppercase">🎁 BÔNUS <span className="text-white/30 italic block md:inline">EXCLUSIVOS</span></h2>
-            <p className="text-white/40 text-base md:text-lg font-light">Ao garantir o Mega Pack hoje, você também leva:</p>
-          </div>
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-8 max-w-6xl mx-auto">
-            {[
-              { title: "Checklist Prefeituras", value: "R$ 67" },
-              { title: "Planilha Orçamento", value: "R$ 47" },
-              { title: "Guia 15 Erros Caros", value: "R$ 49" },
-              { title: "Cronograma Obra", value: "R$ 99" },
-              { title: "PDF Modo Obra", value: "R$ 37" },
-              { title: "Grupo VIP Whats", value: "R$ 67" }
-            ].map((bonus, i) => (
-              <div key={i} className="p-4 md:p-8 rounded-[1rem] md:rounded-[2.5rem] bg-white/5 border border-white/5 text-center group">
-                <h4 className="text-base md:text-xl font-bold mb-1 md:mb-4 tracking-tight leading-tight">{bonus.title}</h4>
-                <p className="text-white/20 line-through text-[10px] md:text-xs mb-0.5 md:mb-2">de {bonus.value}</p>
-                <div className="text-primary font-black text-[10px] md:text-sm uppercase tracking-widest italic group-hover:scale-110 transition-transform">DE GRAÇA</div>
-              </div>
-            ))}
           </div>
         </div>
       </section>
