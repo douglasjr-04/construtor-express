@@ -561,13 +561,6 @@ const App = () => {
         </div>
       </footer>
 
-      {/* Mobile Sticky CTA */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-black/80 backdrop-blur-xl border-t border-white/5 md:hidden z-[120]">
-        <a href="#pricing" className="w-full bg-white text-black py-4 rounded-2xl font-black text-sm uppercase tracking-[0.1em] flex items-center justify-center gap-3 shadow-2xl">
-          QUERO MEU ACESSO AGORA <ArrowRight className="w-4 h-4" />
-        </a>
-      </div>
-
       {/* WhatsApp - Floating */}
       <a href="https://wa.me/5511978693918" target="_blank" className="fixed bottom-24 right-6 md:bottom-10 md:right-10 z-[110] bg-[#25D366] text-white p-4 md:p-5 rounded-2xl md:rounded-3xl shadow-2xl hover:scale-110 active:scale-95 transition-all">
         <MessageCircle className="w-6 h-6 md:w-7 md:h-7" />
