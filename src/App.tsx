@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from 'react';
 
-// Declare vturb-smartplayer as a valid custom element
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      'vturb-smartplayer': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { id?: string };
-    }
-  }
-}
+// Componente wrapper para o player VTurb
+const VTurbPlayer = () => {
+  return React.createElement('vturb-smartplayer', {
+    id: 'vid-6a20f9bb844eb53b32beb679',
+    style: { display: 'block', margin: '0 auto', width: '100%', maxWidth: '400px', height: '100%' }
+  });
+};
 import { 
   Zap, 
   DollarSign, 
@@ -265,7 +264,7 @@ const App = () => {
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }} className="max-w-md mx-auto">
             <div className="relative aspect-[9/16] rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl bg-black">
               {/* VTurb Smart Player */}
-              <vturb-smartplayer id="vid-6a20f9bb844eb53b32beb679" style={{ display: 'block', margin: '0 auto', width: '100%', maxWidth: '400px', height: '100%' }}></vturb-smartplayer>
+              <VTurbPlayer />
             </div>
           </motion.div>
         </div>
