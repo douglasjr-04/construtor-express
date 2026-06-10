@@ -3,8 +3,8 @@ import React, { useEffect, useState } from 'react';
 // Componente wrapper para o player VTurb
 const VTurbPlayer = () => {
   return React.createElement('vturb-smartplayer', {
-    id: 'vid-6a20f9bb844eb53b32beb679',
-    style: { display: 'block', margin: '0 auto', width: '100%', maxWidth: '400px', height: '100%' }
+    id: 'vid-6a29cbde56c167cbe0ca9c59',
+    style: { display: 'block', margin: '0 auto', width: '100%', maxWidth: '400px' }
   });
 };
 import { 
@@ -74,7 +74,7 @@ const App = () => {
   useEffect(() => {
     // Load VTurb player script
     const script = document.createElement('script');
-    script.src = 'https://scripts.converteai.net/340fee6a-4a4a-47e4-af72-2420987beb68/players/6a20f9bb844eb53b32beb679/v4/player.js';
+    script.src = 'https://scripts.converteai.net/4c5a3eb9-fc58-46f4-849a-84a70bc1cd88/players/6a29cbde56c167cbe0ca9c59/v4/player.js';
     script.async = true;
     document.head.appendChild(script);
 
