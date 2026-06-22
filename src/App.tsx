@@ -227,12 +227,10 @@ const App = () => {
               <Zap className="w-3 h-3 text-primary animate-pulse" /> Projetos 100% Editáveis em Revit
             </motion.div>
             <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-4xl md:text-6xl xl:text-7xl font-black tracking-tighter mb-4 md:mb-8 leading-[0.95] md:leading-[0.9] uppercase">
-              500 Projetos De Casas <br />
-              <span className="text-white italic text-3xl md:text-6xl xl:text-7xl">Populares E Modernas</span> <br />
-              <span className="text-primary italic">Para Sair Do Aluguel</span>
+              Pack Com 500 Projetos Completos E Listas De Materiais Para Economizar 50% Na Obra
             </motion.h1>
             <motion.p initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="text-base md:text-xl text-white/50 mb-8 md:mb-12 max-w-3xl mx-auto leading-relaxed font-light px-4 md:px-0">
-              Mesmo sem arquiteto ou experiência em obras, é só escolher o modelo, entregar ao pedreiro e começar. Plantas, materiais e checklists prontos pra sua obra andar sem erro e sem desperdício.
+              Elimine o desperdício e o retrabalho com plantas técnicas de arquitetura, elétrica e hidráulica prontas para o pedreiro.
             </motion.p>
             <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex flex-col sm:flex-row items-center justify-center gap-4 md:gap-6 px-4 md:px-0">
               <a href="#pricing" className="group relative w-full sm:w-auto bg-white text-black px-8 md:px-12 py-5 md:py-6 rounded-2xl text-lg md:text-xl font-black hover:scale-105 transition-all flex items-center justify-center gap-4 shadow-xl">
@@ -257,8 +255,7 @@ const App = () => {
               🎬 ASSISTA A APRESENTAÇÃO
             </motion.div>
             <motion.h2 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }} className="text-3xl md:text-5xl font-black tracking-tight mb-4 uppercase leading-tight">
-              Como Sair Do Aluguel <br />
-              <span className="text-primary italic">Em Até 12 Meses</span>
+              <span className="text-red-500">Não saia</span> sem assistir esse vídeo!
             </motion.h2>
           </div>
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }} className="max-w-md mx-auto">
