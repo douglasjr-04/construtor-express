@@ -21,9 +21,126 @@ import {
   Layers,
   Smartphone,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Gift,
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+type WheelPrize = {
+  id: string;
+  wheelLabel: string;
+  wheelDisplayLabel: string;
+  resultTitle: string;
+  resultMessage: string;
+  ctaLabel: string;
+  href: string;
+  isAllowed: boolean;
+  couponCode?: string;
+};
+
+type StoredWheelPrize = {
+  id: string;
+  redeemedAt: number;
+  expiresAt: number;
+};
+
+const WHEEL_STORAGE_KEY = 'construtor-express-wheel-prize-v1';
+const WHEEL_PRIZE_DURATION_MS = 15 * 60 * 1000;
+const isDevelopment = import.meta.env.DEV;
+
+const wheelPrizes: WheelPrize[] = [
+  {
+    id: 'coupon-10',
+    wheelLabel: 'Cupom 10%',
+    wheelDisplayLabel: 'CUPOM\n10%',
+    resultTitle: 'Cupom Projetos10',
+    resultMessage: 'Para pedidos a partir do Mega Pack.',
+    ctaLabel: 'Aplicar no Mega Pack',
+    href: 'https://checkout.projetodescomplicado.com.br/88565122/',
+    isAllowed: true,
+    couponCode: 'projetos10'
+  },
+  {
+    id: 'coupon-15',
+    wheelLabel: 'Cupom 15%',
+    wheelDisplayLabel: 'CUPOM\n15%',
+    resultTitle: 'Cupom Projetos15',
+    resultMessage: 'Para pedidos a partir do Mega Pack.',
+    ctaLabel: 'Aplicar no Mega Pack',
+    href: 'https://checkout.projetodescomplicado.com.br/88565122/',
+    isAllowed: true,
+    couponCode: 'projetos15'
+  },
+  {
+    id: 'coupon-20',
+    wheelLabel: 'Cupom 20%',
+    wheelDisplayLabel: 'CUPOM\n20%',
+    resultTitle: 'Cupom 20%',
+    resultMessage: 'Prêmio ilustrativo da roleta.',
+    ctaLabel: 'Ver planos',
+    href: '#pricing',
+    isAllowed: false
+  },
+  {
+    id: 'calculator',
+    wheelLabel: 'Calculadora de obra gratis',
+    wheelDisplayLabel: 'CALCULADORA\nGRATIS',
+    resultTitle: 'Calculadora de obra gratis',
+    resultMessage: 'Prêmio ilustrativo da roleta.',
+    ctaLabel: 'Ver planos',
+    href: '#pricing',
+    isAllowed: false
+  },
+  {
+    id: 'ultra-discount',
+    wheelLabel: 'Ultra Pack por R$37,90',
+    wheelDisplayLabel: 'ULTRA PACK\nR$37,90',
+    resultTitle: 'Ultra Pack por R$37,90',
+    resultMessage: 'Você ganhou um super desconto em 500 projetos, clique no link abaixo e garanta essa condição apenas nessa tela.',
+    ctaLabel: 'Garantir Ultra Pack por R$37,90',
+    href: 'https://checkout.projetodescomplicado.com.br/16660674/',
+    isAllowed: true,
+    couponCode: 'ULTRA37'
+  },
+  {
+    id: 'free-projects',
+    wheelLabel: '10 projetos gratis',
+    wheelDisplayLabel: '10 PROJETOS\nGRATIS',
+    resultTitle: '10 projetos gratis',
+    resultMessage: 'Prêmio ilustrativo da roleta.',
+    ctaLabel: 'Ver planos',
+    href: '#pricing',
+    isAllowed: false
+  }
+];
+
+const weightedPrizeTable = [
+  { id: 'coupon-10', weight: 50 },
+  { id: 'coupon-15', weight: 35 },
+  { id: 'ultra-discount', weight: 15 }
+] as const;
+
+const confettiPieces = Array.from({ length: 24 }, (_, index) => index);
+
+const getPrizeById = (prizeId: string) => wheelPrizes.find((prize) => prize.id === prizeId) ?? null;
+const getPrizeIndexById = (prizeId: string) => wheelPrizes.findIndex((prize) => prize.id === prizeId);
+
+const getWeightedPrizeIndex = () => {
+  const totalWeight = weightedPrizeTable.reduce((sum, prize) => sum + prize.weight, 0);
+  const randomValue = Math.random() * totalWeight;
+  let accumulatedWeight = 0;
+
+  for (const prize of weightedPrizeTable) {
+    accumulatedWeight += prize.weight;
+
+    if (randomValue < accumulatedWeight) {
+      return getPrizeIndexById(prize.id);
+    }
+  }
+
+  return getPrizeIndexById(weightedPrizeTable[weightedPrizeTable.length - 1].id);
+};
 
 const fachadas = [
   '/fachadas/477815-1bc7238f5894d2fe07e096ae2482aa67.png',
@@ -70,6 +187,16 @@ const App = () => {
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [showUpsell, setShowUpsell] = useState(false);
   const [isPricingInView, setIsPricingInView] = useState(false);
+  const [showWheelInvite, setShowWheelInvite] = useState(false);
+  const [showWheelModal, setShowWheelModal] = useState(false);
+  const [isWheelSpinning, setIsWheelSpinning] = useState(false);
+  const [wheelRotation, setWheelRotation] = useState(0);
+  const [awardedPrize, setAwardedPrize] = useState<WheelPrize | null>(null);
+  const [prizeExpiresAt, setPrizeExpiresAt] = useState<number | null>(null);
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
+  const [showWheelConfetti, setShowWheelConfetti] = useState(false);
+  const [copiedCoupon, setCopiedCoupon] = useState<string | null>(null);
+  const [showPrizeDock, setShowPrizeDock] = useState(false);
 
   useEffect(() => {
     // Load VTurb player script
@@ -98,6 +225,153 @@ const App = () => {
     observer.observe(pricingSection);
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    if (!isDevelopment) {
+      try {
+        const storedPrizeRaw = window.localStorage.getItem(WHEEL_STORAGE_KEY);
+        if (storedPrizeRaw) {
+          const storedPrize = JSON.parse(storedPrizeRaw) as StoredWheelPrize;
+          const savedPrize = getPrizeById(storedPrize.id);
+
+          if (savedPrize) {
+            setAwardedPrize(savedPrize);
+            setPrizeExpiresAt(storedPrize.expiresAt);
+            setShowPrizeDock(true);
+            setShowWheelInvite(false);
+            setShowWheelModal(false);
+          }
+
+          return;
+        }
+      } catch {
+        // Ignore storage access issues and allow the widget in-session.
+      }
+    }
+
+    timer = setTimeout(() => {
+      setShowWheelInvite(true);
+    }, 3500);
+
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!prizeExpiresAt || currentTime >= prizeExpiresAt) return;
+
+    const interval = window.setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, [prizeExpiresAt]);
+
+  useEffect(() => {
+    if (!showWheelConfetti) return;
+
+    const timer = window.setTimeout(() => {
+      setShowWheelConfetti(false);
+    }, 4200);
+
+    return () => window.clearTimeout(timer);
+  }, [showWheelConfetti]);
+
+  useEffect(() => {
+    if (!copiedCoupon) return;
+
+    const timer = window.setTimeout(() => {
+      setCopiedCoupon(null);
+    }, 2200);
+
+    return () => window.clearTimeout(timer);
+  }, [copiedCoupon]);
+
+  const isPrizeExpired = prizeExpiresAt ? currentTime >= prizeExpiresAt : false;
+  const countdownMs = prizeExpiresAt ? Math.max(prizeExpiresAt - currentTime, 0) : 0;
+  const countdownMinutes = String(Math.floor(countdownMs / 60000)).padStart(2, '0');
+  const countdownSeconds = String(Math.floor((countdownMs % 60000) / 1000)).padStart(2, '0');
+  const countdownLabel = `${countdownMinutes}:${countdownSeconds}`;
+  const isMegaCouponPrize = awardedPrize?.id === 'coupon-10' || awardedPrize?.id === 'coupon-15';
+  const isUltraDiscountPrize = awardedPrize?.id === 'ultra-discount';
+
+  const handlePrizePersist = (selectedPrize: WheelPrize) => {
+    const expiresAt = Date.now() + WHEEL_PRIZE_DURATION_MS;
+
+    setAwardedPrize(selectedPrize);
+    setPrizeExpiresAt(expiresAt);
+    setCurrentTime(Date.now());
+    setShowWheelConfetti(true);
+    setCopiedCoupon(null);
+    setShowPrizeDock(true);
+    setShowWheelModal(false);
+
+    if (!isDevelopment) {
+      try {
+        window.localStorage.setItem(WHEEL_STORAGE_KEY, JSON.stringify({
+          id: selectedPrize.id,
+          redeemedAt: Date.now(),
+          expiresAt
+        } satisfies StoredWheelPrize));
+      } catch {
+        // If localStorage is unavailable, the prize remains unique for the current session.
+      }
+    }
+  };
+
+  const handleCloseWheelModal = () => {
+    if (isWheelSpinning) return;
+    setShowWheelModal(false);
+    if (!awardedPrize) {
+      setShowWheelInvite(true);
+    }
+  };
+
+  const handleOpenWheelModal = () => {
+    setShowWheelInvite(false);
+    setShowWheelModal(true);
+  };
+
+  const handleDismissPrizeDock = () => {
+    setShowPrizeDock(false);
+  };
+
+  const handleCopyCoupon = async () => {
+    if (!awardedPrize?.couponCode) return;
+
+    try {
+      await navigator.clipboard.writeText(awardedPrize.couponCode);
+      setCopiedCoupon(awardedPrize.couponCode);
+    } catch {
+      setCopiedCoupon(null);
+    }
+  };
+
+  const handleSpinWheel = () => {
+    if (isWheelSpinning || awardedPrize) return;
+
+    const selectedIndex = getWeightedPrizeIndex();
+    if (selectedIndex < 0) return;
+
+    const selectedPrize = wheelPrizes[selectedIndex];
+    const sliceAngle = 360 / wheelPrizes.length;
+    const prizeCenterAngle = (selectedIndex * sliceAngle) + (sliceAngle / 2);
+    const targetRotation = wheelRotation + (360 * 6) + (360 - prizeCenterAngle);
+
+    setIsWheelSpinning(true);
+    setWheelRotation(targetRotation);
+
+    window.setTimeout(() => {
+      setIsWheelSpinning(false);
+      setShowWheelInvite(false);
+      handlePrizePersist(selectedPrize);
+    }, 5200);
+  };
 
   return (
     <div className="min-h-screen bg-[#f6f1e8] text-slate-900 font-sans selection:bg-primary/20 selection:text-slate-950 overflow-x-hidden antialiased">
@@ -197,6 +471,273 @@ const App = () => {
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showWheelInvite && !awardedPrize && (
+          <div className="fixed inset-0 z-[205] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-950/45 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.95 }}
+              className="relative w-full max-w-sm rounded-[2rem] border border-slate-200 bg-[#fffaf3] p-6 text-center shadow-2xl"
+            >
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg">
+                <Gift className="h-6 w-6" />
+              </div>
+              <h3 className="mt-4 text-2xl font-black uppercase tracking-tight text-slate-950">
+                Voce ganhou um giro da sorte
+              </h3>
+              <button
+                type="button"
+                onClick={handleOpenWheelModal}
+                className="mt-5 w-full rounded-2xl bg-primary px-5 py-4 text-sm font-black uppercase tracking-[0.14em] text-white transition hover:scale-[1.01]"
+              >
+                Toque para receber
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showWheelModal && (
+          <div className="fixed inset-0 z-[210] flex items-center justify-center overflow-hidden p-3 md:p-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={handleCloseWheelModal}
+              className="absolute inset-0 bg-slate-950/70 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="hide-scrollbar relative w-full max-w-lg overflow-x-hidden md:max-h-[90vh] md:overflow-y-auto"
+            >
+              {showWheelConfetti && (
+                <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
+                  {confettiPieces.map((piece) => (
+                    <span
+                      key={piece}
+                      className="wheel-confetti-piece"
+                      style={{
+                        left: `${(piece * 11) % 96}%`,
+                        animationDelay: `${(piece % 6) * 0.12}s`,
+                        backgroundColor: ['#2563eb', '#f59e0b', '#16a34a', '#dc2626'][piece % 4],
+                        transform: `rotate(${piece * 17}deg)`
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleCloseWheelModal}
+                disabled={isWheelSpinning}
+                className="absolute right-2 top-2 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-slate-300 bg-white/95 text-slate-700 shadow-lg transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <X className="h-4 w-4" />
+              </button>
+
+              <div className="px-2 py-1 md:p-6">
+                <div className="mx-auto mb-3 max-w-lg text-center md:mb-5">
+                  <h2 className="text-base md:text-3xl font-black tracking-tight uppercase text-slate-950">
+                    Gire e veja seu premio
+                  </h2>
+                </div>
+
+                <div className="mx-auto flex w-full max-w-md flex-col items-center">
+                  <div className="relative h-[272px] w-[272px] md:h-[368px] md:w-[368px]">
+                      <div className="absolute left-1/2 top-1 z-20 h-0 w-0 -translate-x-1/2 border-l-[16px] border-r-[16px] border-t-[30px] border-l-transparent border-r-transparent border-t-primary drop-shadow-[0_8px_16px_rgba(37,99,235,0.25)]" />
+                      <motion.div
+                        animate={{ rotate: wheelRotation }}
+                        transition={{ duration: 5, ease: [0.16, 1, 0.3, 1] }}
+                        className="absolute inset-0 rounded-full border-[12px] border-white shadow-[0_30px_60px_rgba(15,23,42,0.18)]"
+                        style={{
+                          background: 'conic-gradient(#0f172a 0deg 60deg, #2563eb 60deg 120deg, #dc2626 120deg 180deg, #0ea5e9 180deg 240deg, #f59e0b 240deg 300deg, #16a34a 300deg 360deg)'
+                        }}
+                      >
+                        {wheelPrizes.map((prize, index) => {
+                          const angle = (360 / wheelPrizes.length) * index + (180 / wheelPrizes.length);
+
+                          return (
+                            <div
+                              key={prize.id}
+                              className="absolute left-1/2 top-1/2 w-20 md:w-28 text-center"
+                              style={{
+                                transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-98px) rotate(${-angle}deg)`
+                              }}
+                            >
+                              <span className="block whitespace-pre-line text-[9px] md:text-[11px] leading-[1.05] font-black uppercase text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.45)]">
+                                {prize.wheelDisplayLabel}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </motion.div>
+
+                      <div className="absolute left-1/2 top-1/2 z-20 flex h-24 w-24 md:h-28 md:w-28 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-8 border-white bg-[#fffaf3] text-center shadow-xl">
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                            {awardedPrize ? 'Premio' : 'Sua vez'}
+                          </p>
+                          <p className="mt-1 text-base md:text-lg font-black uppercase text-slate-950">
+                            {awardedPrize ? (isPrizeExpired ? 'expirado' : 'resgatado') : 'girar'}
+                          </p>
+                        </div>
+                      </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleSpinWheel}
+                    disabled={isWheelSpinning || !!awardedPrize}
+                    className="mt-3 inline-flex w-full items-center justify-center rounded-2xl bg-slate-950/95 px-5 py-3 text-xs md:text-sm font-black uppercase tracking-[0.15em] text-white shadow-[0_14px_35px_rgba(15,23,42,0.2)] transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isWheelSpinning ? 'Girando...' : awardedPrize ? 'Premio Resgatado' : 'Girar Agora'}
+                  </button>
+
+                  {awardedPrize && (
+                    <div className="mt-4 w-full rounded-[1.75rem] border border-white/60 bg-white/92 p-4 shadow-[0_24px_50px_rgba(15,23,42,0.18)] backdrop-blur-md md:p-5">
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
+                        Premio Confirmado
+                      </p>
+                      <h3 className="mt-2 text-xl md:text-2xl font-black tracking-tight text-slate-950">
+                        {awardedPrize.resultTitle}
+                      </h3>
+                      <p className="mt-2 text-sm md:text-base leading-relaxed text-slate-700">
+                        {awardedPrize.resultMessage}
+                      </p>
+                      {awardedPrize.couponCode && (
+                        <div className="mt-4 rounded-2xl border border-slate-200 bg-[#f8fafc] px-4 py-3 shadow-sm">
+                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-600">
+                            Seu cupom
+                          </p>
+                          <div className="mt-2 flex items-center gap-3">
+                            <div className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-left text-lg font-black uppercase tracking-[0.12em] text-slate-950 shadow-sm">
+                              {awardedPrize.couponCode}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={handleCopyCoupon}
+                              className="rounded-xl bg-slate-950 px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-white shadow-sm transition hover:bg-slate-800"
+                            >
+                              {copiedCoupon === awardedPrize.couponCode ? 'Copiado' : 'Copiar'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      <div className="mt-4 rounded-2xl border border-slate-200 bg-[#f8fafc] px-4 py-3 shadow-sm">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-600">
+                          {isPrizeExpired ? 'Prazo Encerrado' : 'Tempo para usar'}
+                        </p>
+                        <p className={`mt-1 text-2xl font-black tracking-tight ${isPrizeExpired ? 'text-red-600' : 'text-slate-950'}`}>
+                          {isPrizeExpired ? 'EXPIRADO' : countdownLabel}
+                        </p>
+                      </div>
+
+                      {isPrizeExpired ? (
+                        <div className="mt-4 block w-full rounded-2xl bg-slate-300 px-5 py-4 text-center text-sm md:text-base font-black uppercase tracking-[0.12em] text-slate-500">
+                          Premio expirado
+                        </div>
+                      ) : (
+                        <a
+                          href={awardedPrize.href}
+                          className="mt-4 block w-full rounded-2xl bg-primary px-5 py-4 text-center text-sm md:text-base font-black uppercase tracking-[0.12em] text-white shadow-[0_18px_40px_rgba(37,99,235,0.28)] transition hover:scale-[1.01]"
+                        >
+                          {awardedPrize.ctaLabel}
+                        </a>
+                      )}
+                      <button
+                        type="button"
+                        onClick={handleCloseWheelModal}
+                        className="mt-3 block w-full rounded-2xl border border-slate-300 bg-white px-5 py-4 text-center text-sm md:text-base font-black uppercase tracking-[0.12em] text-slate-800 shadow-sm transition hover:bg-slate-100"
+                      >
+                        Continuar navegando
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {awardedPrize && showPrizeDock && !showWheelModal && (
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 24 }}
+            className="fixed inset-x-0 bottom-4 z-[215] px-4"
+          >
+            <div className="mx-auto w-full max-w-md rounded-[1.75rem] border border-white/70 bg-white/95 p-4 shadow-[0_24px_60px_rgba(15,23,42,0.2)] backdrop-blur-md">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
+                    Premio Liberado
+                  </p>
+                  <h3 className="mt-1 text-lg font-black tracking-tight text-slate-950">
+                    {awardedPrize.resultTitle}
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleDismissPrizeDock}
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-700 transition hover:bg-slate-100"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {awardedPrize.couponCode && (
+                <div className="mt-3 flex items-center gap-3">
+                  <div className="flex-1 rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-base font-black uppercase tracking-[0.12em] text-slate-950">
+                    {awardedPrize.couponCode}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCopyCoupon}
+                    className="rounded-xl bg-slate-950 px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-white transition hover:bg-slate-800"
+                  >
+                    {copiedCoupon === awardedPrize.couponCode ? 'Copiado' : 'Copiar'}
+                  </button>
+                </div>
+              )}
+
+              <div className="mt-3 flex items-center gap-3">
+                <div className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
+                    {isPrizeExpired ? 'Prazo Encerrado' : 'Tempo para usar'}
+                  </p>
+                  <p className={`mt-1 text-xl font-black tracking-tight ${isPrizeExpired ? 'text-red-600' : 'text-slate-950'}`}>
+                    {isPrizeExpired ? 'EXPIRADO' : countdownLabel}
+                  </p>
+                </div>
+                <a
+                  href={awardedPrize.href}
+                  className={`inline-flex min-w-[132px] items-center justify-center rounded-xl px-4 py-4 text-center text-xs font-black uppercase tracking-[0.12em] ${
+                    isPrizeExpired
+                      ? 'pointer-events-none bg-slate-300 text-slate-500'
+                      : 'bg-primary text-white shadow-[0_16px_35px_rgba(37,99,235,0.24)]'
+                  }`}
+                >
+                  {isPrizeExpired ? 'Expirado' : 'Usar premio'}
+                </a>
+              </div>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
@@ -415,6 +956,23 @@ const App = () => {
           <div className="grid lg:grid-cols-3 gap-6 md:gap-8 max-w-7xl mx-auto items-stretch px-2 md:px-0">
             {/* Mega Pack Card */}
             <div className="bg-white/85 rounded-[2rem] md:rounded-[4rem] p-6 md:p-12 border border-slate-200 flex flex-col overflow-hidden shadow-[0_20px_55px_rgba(15,23,42,0.08)]">
+              {isMegaCouponPrize && (
+                <div className="mb-6 rounded-[1.5rem] border border-primary/20 bg-primary/5 p-4">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
+                    Cupom liberado nesta tela
+                  </p>
+                  <h4 className="mt-2 text-2xl font-black tracking-tight text-slate-950">
+                    {awardedPrize?.resultTitle}
+                  </h4>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                    {awardedPrize?.resultMessage}
+                  </p>
+                  <p className="mt-3 text-[11px] font-black uppercase tracking-[0.16em] text-slate-500">
+                    {isPrizeExpired ? 'Prazo encerrado' : `Use em ate ${countdownLabel}`}
+                  </p>
+                </div>
+              )}
+
               <div className="flex justify-between items-start mb-8 md:mb-10">
                 <div>
                   <h3 className="text-2xl md:text-3xl font-black mb-1 tracking-tighter italic">MEGA PACK</h3>
@@ -464,6 +1022,23 @@ const App = () => {
             <div className="relative group h-full">
               <div className="absolute -inset-[2px] bg-gradient-to-br from-primary to-blue-500 rounded-[2rem] md:rounded-[4rem] blur-sm opacity-20 group-hover:opacity-100 transition duration-1000" />
               <div className="relative bg-[#fffaf3] rounded-[2rem] md:rounded-[4rem] p-6 md:p-12 border border-primary/20 h-full flex flex-col overflow-hidden shadow-[0_22px_60px_rgba(0,86,179,0.12)]">
+                {isUltraDiscountPrize && (
+                  <div className="mb-6 rounded-[1.5rem] border border-amber-300 bg-amber-50 p-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-700">
+                      Premio ativo nesta tela
+                    </p>
+                    <h4 className="mt-2 text-2xl font-black tracking-tight text-slate-950">
+                      {awardedPrize?.resultTitle}
+                    </h4>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-700">
+                      {awardedPrize?.resultMessage}
+                    </p>
+                    <p className="mt-3 text-[11px] font-black uppercase tracking-[0.16em] text-amber-700">
+                      {isPrizeExpired ? 'Prazo encerrado' : `Garanta em ate ${countdownLabel}`}
+                    </p>
+                  </div>
+                )}
+
                 <div className="flex justify-between items-start mb-8 md:mb-10">
                   <div>
                     <h3 className="text-3xl md:text-4xl font-black mb-1 tracking-tighter italic">ULTRA PACK</h3>
