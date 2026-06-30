@@ -1,12 +1,4 @@
-import React, { useEffect, useState } from 'react';
-
-// Componente wrapper para o player VTurb
-const VTurbPlayer = () => {
-  return React.createElement('vturb-smartplayer', {
-    id: 'vid-6a29cbde56c167cbe0ca9c59',
-    style: { display: 'block', margin: '0 auto', width: '100%', maxWidth: '400px' }
-  });
-};
+import React, { useEffect, useRef, useState } from 'react';
 import { 
   Zap, 
   DollarSign, 
@@ -48,6 +40,8 @@ type StoredWheelPrize = {
 const WHEEL_STORAGE_KEY = 'construtor-express-wheel-prize-v1';
 const WHEEL_PRIZE_DURATION_MS = 15 * 60 * 1000;
 const isDevelopment = import.meta.env.DEV;
+const LOCAL_VIDEO_SRC = '/videos/VSL-v2.mp4';
+const LOCAL_VIDEO_POSTER = '/assets/hero.png';
 
 const wheelPrizes: WheelPrize[] = [
   {
@@ -142,6 +136,112 @@ const getWeightedPrizeIndex = () => {
   return getPrizeIndexById(weightedPrizeTable[weightedPrizeTable.length - 1].id);
 };
 
+const LocalProtectedVideoPlayer = () => {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [isAutoplayBlocked, setIsAutoplayBlocked] = useState(false);
+  const [isVideoReady, setIsVideoReady] = useState(false);
+  const [hasVideoError, setHasVideoError] = useState(false);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const tryAutoplay = async () => {
+      try {
+        video.muted = false;
+        await video.play();
+        setIsAutoplayBlocked(false);
+      } catch {
+        try {
+          video.muted = true;
+          await video.play();
+          setIsAutoplayBlocked(true);
+        } catch {
+          setIsAutoplayBlocked(true);
+        }
+      }
+    };
+
+    void tryAutoplay();
+  }, []);
+
+  const handleStartWithSound = async () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    try {
+      video.muted = false;
+      await video.play();
+      setIsAutoplayBlocked(false);
+    } catch {
+      setIsAutoplayBlocked(true);
+    }
+  };
+
+  if (hasVideoError) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-slate-950 p-6 text-center text-white">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">
+            Video Local Nao Encontrado
+          </p>
+          <p className="mt-3 text-sm leading-relaxed text-slate-200">
+            Envie o arquivo para `public/videos/vsl.mp4` que eu conecto automaticamente neste player.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="relative h-full w-full bg-black"
+      onContextMenu={(event) => event.preventDefault()}
+    >
+      <video
+        ref={videoRef}
+        className="h-full w-full object-cover"
+        src={LOCAL_VIDEO_SRC}
+        poster={LOCAL_VIDEO_POSTER}
+        preload="auto"
+        autoPlay
+        playsInline
+        loop
+        controls={false}
+        disablePictureInPicture
+        controlsList="nodownload noplaybackrate nofullscreen"
+        onLoadedData={() => setIsVideoReady(true)}
+        onError={() => setHasVideoError(true)}
+        onDragStart={(event) => event.preventDefault()}
+      />
+
+      {!isVideoReady && !hasVideoError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-slate-950">
+          <div className="h-14 w-14 animate-spin rounded-full border-4 border-white/15 border-t-primary" />
+        </div>
+      )}
+
+      {isAutoplayBlocked && !hasVideoError && (
+        <div className="absolute inset-x-4 bottom-4 rounded-[1.5rem] border border-white/15 bg-slate-950/80 p-4 text-center text-white backdrop-blur-md">
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">
+            Som Bloqueado Pelo Navegador
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-slate-100">
+            O video iniciou, mas o navegador bloqueou o autoplay com audio. Toque abaixo para assistir com som.
+          </p>
+          <button
+            type="button"
+            onClick={handleStartWithSound}
+            className="mt-4 inline-flex w-full items-center justify-center rounded-2xl bg-primary px-5 py-3 text-xs font-black uppercase tracking-[0.14em] text-white transition hover:scale-[1.01]"
+          >
+            Ativar Som E Continuar
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const fachadas = [
   '/fachadas/477815-1bc7238f5894d2fe07e096ae2482aa67.png',
   '/fachadas/477815-20151ce5671db510061b1e9c63d4fce2.png',
@@ -197,19 +297,7 @@ const App = () => {
   const [showWheelConfetti, setShowWheelConfetti] = useState(false);
   const [copiedCoupon, setCopiedCoupon] = useState<string | null>(null);
   const [showPrizeDock, setShowPrizeDock] = useState(false);
-
-  useEffect(() => {
-    // Load VTurb player script
-    const script = document.createElement('script');
-    script.src = 'https://scripts.converteai.net/4c5a3eb9-fc58-46f4-849a-84a70bc1cd88/players/6a29cbde56c167cbe0ca9c59/v4/player.js';
-    script.async = true;
-    document.head.appendChild(script);
-
-    return () => {
-      // Cleanup script when component unmounts
-      document.head.removeChild(script);
-    };
-  }, []);
+  const [showWheelWidget, setShowWheelWidget] = useState(false);
 
   useEffect(() => {
     const pricingSection = document.getElementById('pricing');
@@ -242,6 +330,7 @@ const App = () => {
             setShowPrizeDock(true);
             setShowWheelInvite(false);
             setShowWheelModal(false);
+            setShowWheelWidget(false);
           }
 
           return;
@@ -253,6 +342,7 @@ const App = () => {
 
     timer = setTimeout(() => {
       setShowWheelInvite(true);
+      setShowWheelWidget(false);
     }, 3500);
 
     return () => {
@@ -328,12 +418,24 @@ const App = () => {
     if (isWheelSpinning) return;
     setShowWheelModal(false);
     if (!awardedPrize) {
-      setShowWheelInvite(true);
+      setShowWheelInvite(false);
+      setShowWheelWidget(true);
     }
   };
 
   const handleOpenWheelModal = () => {
     setShowWheelInvite(false);
+    setShowWheelWidget(false);
+    setShowWheelModal(true);
+  };
+
+  const handleDismissWheelInvite = () => {
+    setShowWheelInvite(false);
+    setShowWheelWidget(true);
+  };
+
+  const handleOpenWheelWidget = () => {
+    setShowWheelWidget(false);
     setShowWheelModal(true);
   };
 
@@ -489,6 +591,13 @@ const App = () => {
               exit={{ opacity: 0, y: 20, scale: 0.95 }}
               className="relative w-full max-w-sm rounded-[2rem] border border-slate-200 bg-[#fffaf3] p-6 text-center shadow-2xl"
             >
+              <button
+                type="button"
+                onClick={handleDismissWheelInvite}
+                className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full border border-slate-300 bg-white/95 text-slate-700 shadow-lg transition hover:bg-slate-100"
+              >
+                <X className="h-4 w-4" />
+              </button>
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg">
                 <Gift className="h-6 w-6" />
               </div>
@@ -498,12 +607,37 @@ const App = () => {
               <button
                 type="button"
                 onClick={handleOpenWheelModal}
-                className="mt-5 w-full rounded-2xl bg-primary px-5 py-4 text-sm font-black uppercase tracking-[0.14em] text-white transition hover:scale-[1.01]"
+                className="cta-pulse mt-5 w-full rounded-2xl bg-primary px-5 py-4 text-sm font-black uppercase tracking-[0.14em] text-white transition hover:scale-[1.01]"
               >
                 Toque para receber
               </button>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showWheelWidget && !showWheelInvite && !showWheelModal && !awardedPrize && (
+          <motion.button
+            type="button"
+            initial={{ opacity: 0, y: 20, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.96 }}
+            onClick={handleOpenWheelWidget}
+            className="fixed bottom-5 right-4 z-[204] flex items-center gap-3 rounded-full border border-primary/20 bg-white/95 px-4 py-3 text-left shadow-[0_20px_45px_rgba(15,23,42,0.16)] backdrop-blur-md transition hover:scale-[1.02] md:bottom-8 md:right-8"
+          >
+            <span className="cta-pulse flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white shadow-lg">
+              <Gift className="h-5 w-5" />
+            </span>
+            <span>
+              <span className="block text-[10px] font-black uppercase tracking-[0.18em] text-primary">
+                Giro Da Sorte
+              </span>
+              <span className="block text-sm font-black uppercase text-slate-950">
+                Abrir Roleta
+              </span>
+            </span>
+          </motion.button>
         )}
       </AnimatePresence>
 
@@ -602,7 +736,7 @@ const App = () => {
                     type="button"
                     onClick={handleSpinWheel}
                     disabled={isWheelSpinning || !!awardedPrize}
-                    className="mt-3 inline-flex w-full items-center justify-center rounded-2xl bg-slate-950/95 px-5 py-3 text-xs md:text-sm font-black uppercase tracking-[0.15em] text-white shadow-[0_14px_35px_rgba(15,23,42,0.2)] transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="cta-pulse mt-3 inline-flex w-full items-center justify-center rounded-2xl bg-slate-950/95 px-5 py-3 text-xs md:text-sm font-black uppercase tracking-[0.15em] text-white shadow-[0_14px_35px_rgba(15,23,42,0.2)] transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {isWheelSpinning ? 'Girando...' : awardedPrize ? 'Premio Resgatado' : 'Girar Agora'}
                   </button>
@@ -801,8 +935,7 @@ const App = () => {
           </div>
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }} className="max-w-md mx-auto">
             <div className="relative aspect-[9/16] rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden border border-slate-300 shadow-2xl bg-slate-950">
-              {/* VTurb Smart Player */}
-              <VTurbPlayer />
+              <LocalProtectedVideoPlayer />
             </div>
           </motion.div>
         </div>
